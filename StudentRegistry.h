@@ -40,12 +40,11 @@ public:
         }
     }
 
-    // Get students with grade >= minGrade in a course
     std::vector<std::shared_ptr<Student<R, C>>> getStudentsWithGrade(
             const C& courseCode, double minGrade) const {
         std::lock_guard<std::mutex> lock(registryMutex);
         
-        std::set<std::shared_ptr<Student<R, C>>> resultSet;  // Use set to avoid duplicates
+        std::set<std::shared_ptr<Student<R, C>>> resultSet;
         
         auto courseIt = courseGradeIndex.find(courseCode);
         if (courseIt == courseGradeIndex.end()) {
@@ -59,15 +58,12 @@ public:
             }
         }
         
-        // Convert set to vector
         std::vector<std::shared_ptr<Student<R, C>>> result(resultSet.begin(), resultSet.end());
         return result;
     }
 
-    // Iterator for original order
     class OriginalOrderIterator {
         typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it;
-        typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end;
 
     public:
         using iterator_category = std::forward_iterator_tag;
@@ -76,9 +72,8 @@ public:
         using pointer = std::shared_ptr<Student<R, C>>*;
         using reference = std::shared_ptr<Student<R, C>>;
 
-        OriginalOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it,
-                             typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end)
-            : it(it), end(end) {}
+        OriginalOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it)
+            : it(it) {}
 
         OriginalOrderIterator& operator++() {
             ++it;
@@ -109,17 +104,15 @@ public:
     };
 
     OriginalOrderIterator originalBegin() const {
-        return OriginalOrderIterator(originalOrder.begin(), originalOrder.end());
+        return OriginalOrderIterator(originalOrder.begin());
     }
 
     OriginalOrderIterator originalEnd() const {
-        return OriginalOrderIterator(originalOrder.end(), originalOrder.end());
+        return OriginalOrderIterator(originalOrder.end());
     }
 
-    // Iterator for sorted order
     class SortedOrderIterator {
         typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it;
-        typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end;
 
     public:
         using iterator_category = std::forward_iterator_tag;
@@ -128,9 +121,8 @@ public:
         using pointer = std::shared_ptr<Student<R, C>>*;
         using reference = std::shared_ptr<Student<R, C>>;
 
-        SortedOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it,
-                           typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end)
-            : it(it), end(end) {}
+        SortedOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it)
+            : it(it) {}
 
         SortedOrderIterator& operator++() {
             ++it;
@@ -161,11 +153,11 @@ public:
     };
 
     SortedOrderIterator sortedBegin() const {
-        return SortedOrderIterator(sortedOrder.begin(), sortedOrder.end());
+        return SortedOrderIterator(sortedOrder.begin());
     }
 
     SortedOrderIterator sortedEnd() const {
-        return SortedOrderIterator(sortedOrder.end(), sortedOrder.end());
+        return SortedOrderIterator(sortedOrder.end());
     }
 
     size_t size() const {
@@ -210,7 +202,6 @@ public:
             thread.join();
         }
         
-        // Merge
         std::vector<std::shared_ptr<Student<R, C>>> result;
         std::vector<size_t> indices(numThreads, 0);
         

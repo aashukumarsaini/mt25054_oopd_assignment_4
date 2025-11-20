@@ -10,8 +10,6 @@
 
 using namespace std;
 
-using IIITDStudent = Student<string, string>;
-using IITDStudent = Student<string, int>;
 void demonstratePart1() {
     cout << "\n--- Part 1: Generic Student Class (from CSV) ---\n";
     
@@ -37,7 +35,6 @@ void demonstratePart1() {
 void demonstratePart2() {
     cout << "\n--- Part 2: IIIT-D students with IIT-D course support ---\n";
     
-    // Create IIIT-D students with string course codes
     auto iitdStudents = CSVReader::readStudentsStringString("students.csv");
     
     if (iitdStudents.empty()) {
@@ -58,25 +55,16 @@ void demonstratePart2() {
         }
     }
     
-    // Demonstrate that the same system can handle IIT-D students with integer course codes
     cout << "\n--- Creating IIT-D student records (integer course codes) ---\n";
     
-    // Create a sample IIT-D student
     auto iitdStudent1 = make_shared<Student<string, int>>(
         "Rajesh Kumar", "2020CS1001", "CSE", 2020);
-    iitdStudent1->addPreviousCourse(101, 9.5);  // IIT-D course code (integer)
-    iitdStudent1->addPreviousCourse(202, 8.8);  // IIT-D course code (integer)
-    iitdStudent1->addCurrentCourse(303, 0.0);   // IIT-D course code (integer)
+    iitdStudent1->addPreviousCourse(101, 9.5);
+    iitdStudent1->addPreviousCourse(202, 8.8);
+    iitdStudent1->addCurrentCourse(303, 0.0);
     
     cout << "IIT-D Student (integer course codes):\n";
     cout << *iitdStudent1 << endl << endl;
-    
-    // Show that IIIT-D students can take IIT-D courses
-    // Since a single Student template can't have both types, we demonstrate
-    // that the system supports both types, and in practice, you could:
-    // 1. Use a variant/union type for course codes, or
-    // 2. Maintain separate course lists, or
-    // 3. Use a wrapper that can handle both
     
     cout << "Note: The generic Student class supports both:\n";
     cout << "  - Student<string, string> for IIIT-D courses (e.g., 'OOPD', 'DSA')\n";
@@ -218,13 +206,10 @@ void demonstratePart5() {
     string courseCode;
     double minGrade;
     
-    // Get course code
     cout << "\nEnter course code (e.g., OOPD, DSA): ";
-    // Clear any leftover newline from previous cin >> operations
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     getline(cin, courseCode);
     
-    // Trim whitespace from course code
     courseCode.erase(0, courseCode.find_first_not_of(" \t\n\r"));
     courseCode.erase(courseCode.find_last_not_of(" \t\n\r") + 1);
     
@@ -233,7 +218,6 @@ void demonstratePart5() {
         return;
     }
     
-    // Get grade with retry loop
     bool validGrade = false;
     while (!validGrade) {
         cout << "Enter minimum grade threshold (e.g., 9.0): ";
@@ -251,7 +235,6 @@ void demonstratePart5() {
             size_t pos;
             minGrade = stod(gradeInput, &pos);
             
-            // Check if entire string was consumed
             string remaining = gradeInput.substr(pos);
             remaining.erase(0, remaining.find_first_not_of(" \t\n\r"));
             

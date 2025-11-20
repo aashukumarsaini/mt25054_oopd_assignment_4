@@ -30,7 +30,6 @@ public:
         }
         
         std::string line;
-        // Skip header
         if (std::getline(file, line)) {
             if (line.find("name") == std::string::npos && 
                 line.find("roll") == std::string::npos) {
@@ -105,7 +104,6 @@ public:
         }
         
         std::string line;
-        // Skip header
         if (std::getline(file, line)) {
             if (line.find("name") == std::string::npos && 
                 line.find("roll") == std::string::npos) {
