@@ -8,7 +8,7 @@ $(TARGET): $(SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES)
 
 clean:
-	rm -f $(TARGET) students.csv
+	rm -f $(TARGET)
 
 run: $(TARGET)
 	./$(TARGET)

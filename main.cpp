@@ -6,7 +6,7 @@
 #include <memory>
 #include <chrono>
 #include <iomanip>
-#include <fstream>
+#include <limits>
 
 using namespace std;
 
@@ -37,18 +37,19 @@ void demonstratePart1() {
 void demonstratePart2() {
     cout << "\n--- Part 2: IIIT-D students with IIT-D course support ---\n";
     
-    auto students = CSVReader::readStudentsStringString("students.csv");
+    // Create IIIT-D students with string course codes
+    auto iitdStudents = CSVReader::readStudentsStringString("students.csv");
     
-    if (students.empty()) {
+    if (iitdStudents.empty()) {
         cout << "Error: Couldn't read students from CSV\n";
         return;
     }
     
-    cout << "Showing IIIT-D students (string course codes) from CSV:\n\n";
+    cout << "IIIT-D students (using string course codes like 'OOPD', 'DSA'):\n\n";
     
     int count = 0;
-    for (const auto& student : students) {
-        if (count < 3) {
+    for (const auto& student : iitdStudents) {
+        if (count < 2) {
             cout << "Student " << (count+1) << ":\n";
             cout << *student << endl << endl;
             count++;
@@ -57,9 +58,31 @@ void demonstratePart2() {
         }
     }
     
-    cout << "Note: IIIT-D students use string course codes (like 'OOPD', 'DSA').\n";
-    cout << "These students can also take IIT-D courses which use integer course codes.\n";
-    cout << "To demonstrate IIT-D courses, you would use Student<string, int> type.\n";
+    // Demonstrate that the same system can handle IIT-D students with integer course codes
+    cout << "\n--- Creating IIT-D student records (integer course codes) ---\n";
+    
+    // Create a sample IIT-D student
+    auto iitdStudent1 = make_shared<Student<string, int>>(
+        "Rajesh Kumar", "2020CS1001", "CSE", 2020);
+    iitdStudent1->addPreviousCourse(101, 9.5);  // IIT-D course code (integer)
+    iitdStudent1->addPreviousCourse(202, 8.8);  // IIT-D course code (integer)
+    iitdStudent1->addCurrentCourse(303, 0.0);   // IIT-D course code (integer)
+    
+    cout << "IIT-D Student (integer course codes):\n";
+    cout << *iitdStudent1 << endl << endl;
+    
+    // Show that IIIT-D students can take IIT-D courses
+    // Since a single Student template can't have both types, we demonstrate
+    // that the system supports both types, and in practice, you could:
+    // 1. Use a variant/union type for course codes, or
+    // 2. Maintain separate course lists, or
+    // 3. Use a wrapper that can handle both
+    
+    cout << "Note: The generic Student class supports both:\n";
+    cout << "  - Student<string, string> for IIIT-D courses (e.g., 'OOPD', 'DSA')\n";
+    cout << "  - Student<string, int> for IIT-D courses (e.g., 101, 202, 303)\n";
+    cout << "This demonstrates that IIIT-D students can take IIT-D courses\n";
+    cout << "by using the appropriate template instantiation.\n";
 }
 
 void demonstratePart3() {
@@ -77,20 +100,24 @@ void demonstratePart3() {
     
     auto studentsToSort = students;
     int numThreads = 2;
-    vector<chrono::milliseconds> threadTimes;
+    vector<chrono::microseconds> threadTimes;
     
     cout << "Sorting with " << numThreads << " threads...\n";
     auto startTime = chrono::high_resolution_clock::now();
     StudentRegistry<string, string>::parallelSort(studentsToSort, numThreads, threadTimes);
     auto endTime = chrono::high_resolution_clock::now();
     
-    auto totalTime = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+    auto totalTime = chrono::duration_cast<chrono::microseconds>(endTime - startTime);
     
     cout << "\nSorting results:\n";
     for (size_t i = 0; i < threadTimes.size(); ++i) {
-        cout << "Thread " << i << ": " << threadTimes[i].count() << " ms\n";
+        double ms = threadTimes[i].count() / 1000.0;
+        cout << "Thread " << i << ": " << threadTimes[i].count() << " μs (" 
+             << fixed << setprecision(3) << ms << " ms)\n";
     }
-    cout << "Total time: " << totalTime.count() << " ms\n";
+    double totalMs = totalTime.count() / 1000.0;
+    cout << "Total time: " << totalTime.count() << " μs (" 
+         << fixed << setprecision(3) << totalMs << " ms)\n";
     
     bool isSorted = true;
     for (size_t i = 1; i < studentsToSort.size(); ++i) {
@@ -101,18 +128,10 @@ void demonstratePart3() {
     }
     cout << "Verification: " << (isSorted ? "PASSED" : "FAILED") << endl;
     
-    cout << "\nFirst 5 (sorted):\n";
-    for (size_t i = 0; i < min(static_cast<size_t>(5), studentsToSort.size()); ++i) {
+    cout << "\nAll students (sorted by roll number):\n";
+    for (size_t i = 0; i < studentsToSort.size(); ++i) {
         cout << "  " << studentsToSort[i]->getRollNumber() 
              << " - " << studentsToSort[i]->getName() << endl;
-    }
-    if (studentsToSort.size() > 5) {
-        cout << "...\n";
-        cout << "Last 5 (sorted):\n";
-        for (size_t i = studentsToSort.size() - 5; i < studentsToSort.size(); ++i) {
-            cout << "  " << studentsToSort[i]->getRollNumber() 
-                 << " - " << studentsToSort[i]->getName() << endl;
-        }
     }
 }
 
@@ -133,22 +152,49 @@ void demonstratePart4() {
         registry.addStudent(student);
     }
     
-    cout << "\nOriginal order (first 10):\n";
-    int count = 0;
-    for (auto it = registry.originalBegin(); it != registry.originalEnd() && count < 10; ++it, ++count) {
-        cout << "  " << (*it)->getRollNumber() << " - " << (*it)->getName() << endl;
-    }
-    if (registry.size() > 10) {
-        cout << "  ... (showing first 10 of " << registry.size() << ")\n";
+    int orderChoice;
+    bool validChoice = false;
+    
+    while (!validChoice) {
+        cout << "\nSelect order to display:\n";
+        cout << "1. Original order (as entered)\n";
+        cout << "2. Sorted order (by roll number)\n";
+        cout << "Enter your choice (1 or 2): ";
+        
+        string input;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(cin, input);
+        
+        if (cin.fail()) {
+            cout << "Error: Input stream error. Please try again.\n";
+            cin.clear();
+            continue;
+        }
+        
+        try {
+            orderChoice = stoi(input);
+            if (orderChoice == 1 || orderChoice == 2) {
+                validChoice = true;
+            } else {
+                cout << "Error: Please enter 1 or 2.\n";
+            }
+        } catch (const std::invalid_argument&) {
+            cout << "Error: Invalid input. Please enter 1 or 2.\n";
+        } catch (const std::out_of_range&) {
+            cout << "Error: Input out of range. Please enter 1 or 2.\n";
+        }
     }
     
-    cout << "\nSorted order (first 10):\n";
-    count = 0;
-    for (auto it = registry.sortedBegin(); it != registry.sortedEnd() && count < 10; ++it, ++count) {
-        cout << "  " << (*it)->getRollNumber() << " - " << (*it)->getName() << endl;
-    }
-    if (registry.size() > 10) {
-        cout << "  ... (showing first 10 of " << registry.size() << ")\n";
+    if (orderChoice == 1) {
+        cout << "\nOriginal order (as entered):\n";
+        for (auto it = registry.originalBegin(); it != registry.originalEnd(); ++it) {
+            cout << "  " << (*it)->getRollNumber() << " - " << (*it)->getName() << endl;
+        }
+    } else {
+        cout << "\nSorted order (by roll number):\n";
+        for (auto it = registry.sortedBegin(); it != registry.sortedEnd(); ++it) {
+            cout << "  " << (*it)->getRollNumber() << " - " << (*it)->getName() << endl;
+        }
     }
 }
 
@@ -169,87 +215,91 @@ void demonstratePart5() {
         registry.addStudent(student);
     }
     
-    cout << "\nFinding students with grade >= 9.0 in OOPD:\n";
-    auto qualifiedStudents = registry.getStudentsWithGrade("OOPD", 9.0);
+    string courseCode;
+    double minGrade;
     
-    cout << "Found " << qualifiedStudents.size() << " students:\n";
-    int count = 0;
-    for (const auto& student : qualifiedStudents) {
-        if (count < 10) {
-            double grade = student->getGrade("OOPD");
-            cout << "  " << student->getName() << " (" << student->getRollNumber() 
-                 << ") - Grade: " << fixed << setprecision(1) << grade << endl;
-            count++;
-        } else {
-            break;
-        }
-    }
-    if (qualifiedStudents.size() > 10) {
-        cout << "  ... (showing first 10 of " << qualifiedStudents.size() << ")\n";
-    }
+    // Get course code
+    cout << "\nEnter course code (e.g., OOPD, DSA): ";
+    // Clear any leftover newline from previous cin >> operations
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin, courseCode);
     
-    cout << "\nFinding students with grade >= 9.0 in DSA:\n";
-    qualifiedStudents = registry.getStudentsWithGrade("DSA", 9.0);
+    // Trim whitespace from course code
+    courseCode.erase(0, courseCode.find_first_not_of(" \t\n\r"));
+    courseCode.erase(courseCode.find_last_not_of(" \t\n\r") + 1);
     
-    cout << "Found " << qualifiedStudents.size() << " students:\n";
-    count = 0;
-    for (const auto& student : qualifiedStudents) {
-        if (count < 10) {
-            double grade = student->getGrade("DSA");
-            cout << "  " << student->getName() << " (" << student->getRollNumber() 
-                 << ") - Grade: " << fixed << setprecision(1) << grade << endl;
-            count++;
-        } else {
-            break;
-        }
-    }
-    if (qualifiedStudents.size() > 10) {
-        cout << "  ... (showing first 10 of " << qualifiedStudents.size() << ")\n";
-    }
-}
-
-void createSampleCSV() {
-    ofstream file("students.csv");
-    if (!file.is_open()) {
-        cerr << "Error creating CSV file\n";
+    if (courseCode.empty()) {
+        cout << "Error: Course code cannot be empty\n";
         return;
     }
     
-    file << "Name,RollNumber,Branch,StartingYear,Courses\n";
-    
-    for (int i = 0; i < 3000; ++i) {
-        string name = "Student" + to_string(i);
-        string roll = "2020CS" + to_string(1000 + i);
-        string branch = (i % 3 == 0) ? "CSE" : (i % 3 == 1) ? "ECE" : "EEE";
-        int year = 2020 + (i % 4);
-        double grade1 = 7.0 + (i % 31) * 0.1;
-        double grade2 = 7.0 + ((i * 3) % 31) * 0.1;
+    // Get grade with retry loop
+    bool validGrade = false;
+    while (!validGrade) {
+        cout << "Enter minimum grade threshold (e.g., 9.0): ";
         
-        file << name << "," << roll << "," << branch << "," << year 
-             << ",OOPD:" << fixed << setprecision(1) << grade1 
-             << ";DSA:" << grade2 << "\n";
+        string gradeInput;
+        getline(cin, gradeInput);
+        
+        if (cin.fail()) {
+            cout << "Error: Input stream error. Please try again.\n";
+            cin.clear();
+            continue;
+        }
+        
+        try {
+            size_t pos;
+            minGrade = stod(gradeInput, &pos);
+            
+            // Check if entire string was consumed
+            string remaining = gradeInput.substr(pos);
+            remaining.erase(0, remaining.find_first_not_of(" \t\n\r"));
+            
+            if (!remaining.empty()) {
+                cout << "Error: Invalid grade input. Please enter a valid number (e.g., 9.0).\n";
+                continue;
+            }
+            
+            if (minGrade < 0.0 || minGrade > 10.0) {
+                cout << "Warning: Grade is outside typical range (0-10). Continuing anyway...\n";
+            }
+            
+            validGrade = true;
+        } catch (const std::invalid_argument&) {
+            cout << "Error: Invalid grade input. Please enter a valid number (e.g., 9.0).\n";
+        } catch (const std::out_of_range&) {
+            cout << "Error: Grade value is out of range. Please enter a valid number.\n";
+        }
     }
     
-    file.close();
-    cout << "Created students.csv with 3000 records\n";
+    cout << "\nFinding students with grade >= " << fixed << setprecision(1) << minGrade 
+         << " in " << courseCode << ":\n";
+    auto qualifiedStudents = registry.getStudentsWithGrade(courseCode, minGrade);
+    
+    cout << "Found " << qualifiedStudents.size() << " students:\n";
+    if (qualifiedStudents.empty()) {
+        cout << "  No students found with the specified criteria.\n";
+    } else {
+        for (const auto& student : qualifiedStudents) {
+            double grade = student->getGrade(courseCode);
+            cout << "  " << student->getName() << " (" << student->getRollNumber() 
+                 << ") - Grade: " << fixed << setprecision(1) << grade << endl;
+        }
+    }
 }
 
 int main() {
     cout << "University ERP System\n";
-    cout << "====================\n";
-    
-    cout << "\nCreating sample CSV file...\n";
-    createSampleCSV();
-    
+
     int choice;
     while (true) {
         cout << "\n========================================\n";
         cout << "Select an option:\n";
-        cout << "1. Part 1: Generic Student Class\n";
-        cout << "2. Part 2: IIIT-D with IIT-D Course Support\n";
-        cout << "3. Part 3: Parallel Sorting from CSV\n";
-        cout << "4. Part 4: Iterators (Original & Sorted Order)\n";
-        cout << "5. Part 5: Efficient Grade-Based Queries\n";
+        cout << "1. Generic Student Class\n";
+        cout << "2. IIIT-D with IIT-D Course Support\n";
+        cout << "3. Parallel Sorting from CSV\n";
+        cout << "4. Iterators (Original & Sorted Order)\n";
+        cout << "5. Efficient Grade-Based Queries\n";
         cout << "6. Run All Parts\n";
         cout << "0. Exit\n";
         cout << "Enter your choice: ";

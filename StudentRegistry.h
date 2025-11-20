@@ -10,6 +10,7 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <iterator>
 
 template<typename R, typename C>
 class StudentRegistry {
@@ -44,20 +45,22 @@ public:
             const C& courseCode, double minGrade) const {
         std::lock_guard<std::mutex> lock(registryMutex);
         
-        std::vector<std::shared_ptr<Student<R, C>>> result;
+        std::set<std::shared_ptr<Student<R, C>>> resultSet;  // Use set to avoid duplicates
         
         auto courseIt = courseGradeIndex.find(courseCode);
         if (courseIt == courseGradeIndex.end()) {
-            return result;
+            return std::vector<std::shared_ptr<Student<R, C>>>();
         }
         
         for (auto gradeIt = courseIt->second.lower_bound(minGrade);
              gradeIt != courseIt->second.end(); ++gradeIt) {
             for (const auto& student : gradeIt->second) {
-                result.push_back(student);
+                resultSet.insert(student);
             }
         }
         
+        // Convert set to vector
+        std::vector<std::shared_ptr<Student<R, C>>> result(resultSet.begin(), resultSet.end());
         return result;
     }
 
@@ -67,6 +70,12 @@ public:
         typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end;
 
     public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = std::shared_ptr<Student<R, C>>;
+        using difference_type = std::ptrdiff_t;
+        using pointer = std::shared_ptr<Student<R, C>>*;
+        using reference = std::shared_ptr<Student<R, C>>;
+
         OriginalOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it,
                              typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end)
             : it(it), end(end) {}
@@ -76,11 +85,25 @@ public:
             return *this;
         }
 
+        OriginalOrderIterator operator++(int) {
+            OriginalOrderIterator tmp = *this;
+            ++it;
+            return tmp;
+        }
+
+        bool operator==(const OriginalOrderIterator& other) const {
+            return it == other.it;
+        }
+
         bool operator!=(const OriginalOrderIterator& other) const {
             return it != other.it;
         }
 
         std::shared_ptr<Student<R, C>> operator*() const {
+            return *it;
+        }
+
+        std::shared_ptr<Student<R, C>> operator->() const {
             return *it;
         }
     };
@@ -99,6 +122,12 @@ public:
         typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end;
 
     public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = std::shared_ptr<Student<R, C>>;
+        using difference_type = std::ptrdiff_t;
+        using pointer = std::shared_ptr<Student<R, C>>*;
+        using reference = std::shared_ptr<Student<R, C>>;
+
         SortedOrderIterator(typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator it,
                            typename std::vector<std::shared_ptr<Student<R, C>>>::const_iterator end)
             : it(it), end(end) {}
@@ -108,11 +137,25 @@ public:
             return *this;
         }
 
+        SortedOrderIterator operator++(int) {
+            SortedOrderIterator tmp = *this;
+            ++it;
+            return tmp;
+        }
+
+        bool operator==(const SortedOrderIterator& other) const {
+            return it == other.it;
+        }
+
         bool operator!=(const SortedOrderIterator& other) const {
             return it != other.it;
         }
 
         std::shared_ptr<Student<R, C>> operator*() const {
+            return *it;
+        }
+
+        std::shared_ptr<Student<R, C>> operator->() const {
             return *it;
         }
     };
@@ -131,7 +174,7 @@ public:
 
     static void parallelSort(std::vector<std::shared_ptr<Student<R, C>>>& students,
                             int numThreads, 
-                            std::vector<std::chrono::milliseconds>& threadTimes) {
+                            std::vector<std::chrono::microseconds>& threadTimes) {
         if (students.empty()) return;
         
         size_t chunkSize = students.size() / numThreads;
@@ -158,7 +201,7 @@ public:
                          });
                 
                 auto endTime = std::chrono::high_resolution_clock::now();
-                threadTimes[i] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                threadTimes[i] = std::chrono::duration_cast<std::chrono::microseconds>(
                     endTime - startTime);
             });
         }
