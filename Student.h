@@ -4,9 +4,69 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
 
 template<typename R, typename C>
 class Student {
+private:
+    static bool isNumericString(const std::string& str) {
+        return !str.empty() && std::all_of(str.begin(), str.end(), ::isdigit);
+    }
+    
+    static bool compareRollNumbers(const std::string& a, const std::string& b) {
+        bool aIsNumeric = isNumericString(a);
+        bool bIsNumeric = isNumericString(b);
+        
+        if (aIsNumeric && bIsNumeric) {
+            try {
+                long long aNum = std::stoll(a);
+                long long bNum = std::stoll(b);
+                return aNum < bNum;
+            } catch (...) {
+                if (a.length() < b.length()) return true;
+                if (a.length() > b.length()) return false;
+                return a < b;
+            }
+        }
+        
+        if (aIsNumeric && !bIsNumeric) {
+            return true;
+        }
+        
+        if (!aIsNumeric && bIsNumeric) {
+            return false;
+        }
+        
+        size_t aPos = 0, bPos = 0;
+        while (aPos < a.length() && bPos < b.length()) {
+            bool aIsDigit = std::isdigit(static_cast<unsigned char>(a[aPos]));
+            bool bIsDigit = std::isdigit(static_cast<unsigned char>(b[bPos]));
+            
+            if (aIsDigit && bIsDigit) {
+                size_t aNumStart = aPos;
+                size_t bNumStart = bPos;
+                while (aPos < a.length() && std::isdigit(static_cast<unsigned char>(a[aPos]))) aPos++;
+                while (bPos < b.length() && std::isdigit(static_cast<unsigned char>(b[bPos]))) bPos++;
+                
+                std::string aNum = a.substr(aNumStart, aPos - aNumStart);
+                std::string bNum = b.substr(bNumStart, bPos - bNumStart);
+                
+                if (aNum.length() < bNum.length()) return true;
+                if (aNum.length() > bNum.length()) return false;
+                if (aNum != bNum) return aNum < bNum;
+            } else {
+                if (a[aPos] != b[bPos]) {
+                    return a[aPos] < b[bPos];
+                }
+                aPos++;
+                bPos++;
+            }
+        }
+        
+        return a.length() < b.length();
+    }
 private:
     std::string name;
     R rollNumber;
@@ -67,7 +127,11 @@ public:
     }
 
     bool operator<(const Student& other) const {
-        return rollNumber < other.rollNumber;
+        if constexpr (std::is_same_v<R, std::string>) {
+            return compareRollNumbers(rollNumber, other.rollNumber);
+        } else {
+            return rollNumber < other.rollNumber;
+        }
     }
 
     template<typename R1, typename C1>

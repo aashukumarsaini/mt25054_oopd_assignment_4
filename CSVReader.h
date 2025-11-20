@@ -60,22 +60,53 @@ public:
                     auto student = std::make_shared<Student<std::string, std::string>>(
                         name, rollNumber, branch, startingYear);
                     
-                    if (tokens.size() > 4 && !tokens[4].empty()) {
-                        std::istringstream coursesStream(tokens[4]);
-                        std::string courseEntry;
-                        while (std::getline(coursesStream, courseEntry, ';')) {
-                            courseEntry = trim(courseEntry);
-                            if (courseEntry.empty()) continue;
-                            
-                            size_t colonPos = courseEntry.find(':');
-                            if (colonPos != std::string::npos) {
-                                std::string courseCode = trim(courseEntry.substr(0, colonPos));
-                                std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
-                                if (!courseCode.empty() && !gradeStr.empty()) {
-                                    try {
-                                        double grade = std::stod(gradeStr);
-                                        student->addPreviousCourse(courseCode, grade);
-                                    } catch (...) {
+                    if (tokens.size() > 4) {
+                        if (!tokens[4].empty()) {
+                            std::istringstream currentCoursesStream(tokens[4]);
+                            std::string courseEntry;
+                            while (std::getline(currentCoursesStream, courseEntry, ';')) {
+                                courseEntry = trim(courseEntry);
+                                if (courseEntry.empty()) continue;
+                                
+                                size_t colonPos = courseEntry.find(':');
+                                if (colonPos != std::string::npos) {
+                                    std::string courseCode = trim(courseEntry.substr(0, colonPos));
+                                    std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
+                                    if (!courseCode.empty()) {
+                                        try {
+                                            double grade = std::stod(gradeStr);
+                                            if (grade == 0.0) {
+                                                student->addCurrentCourse(courseCode, 0.0);
+                                            } else {
+                                                student->addPreviousCourse(courseCode, grade);
+                                            }
+                                        } catch (...) {
+                                            student->addCurrentCourse(courseCode, 0.0);
+                                        }
+                                    }
+                                } else {
+                                    student->addCurrentCourse(trim(courseEntry), 0.0);
+                                }
+                            }
+                        }
+                        
+                        if (tokens.size() > 5 && !tokens[5].empty()) {
+                            std::istringstream previousCoursesStream(tokens[5]);
+                            std::string courseEntry;
+                            while (std::getline(previousCoursesStream, courseEntry, ';')) {
+                                courseEntry = trim(courseEntry);
+                                if (courseEntry.empty()) continue;
+                                
+                                size_t colonPos = courseEntry.find(':');
+                                if (colonPos != std::string::npos) {
+                                    std::string courseCode = trim(courseEntry.substr(0, colonPos));
+                                    std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
+                                    if (!courseCode.empty() && !gradeStr.empty()) {
+                                        try {
+                                            double grade = std::stod(gradeStr);
+                                            student->addPreviousCourse(courseCode, grade);
+                                        } catch (...) {
+                                        }
                                     }
                                 }
                             }
@@ -134,23 +165,63 @@ public:
                     auto student = std::make_shared<Student<std::string, int>>(
                         name, rollNumber, branch, startingYear);
                     
-                    if (tokens.size() > 4 && !tokens[4].empty()) {
-                        std::istringstream coursesStream(tokens[4]);
-                        std::string courseEntry;
-                        while (std::getline(coursesStream, courseEntry, ';')) {
-                            courseEntry = trim(courseEntry);
-                            if (courseEntry.empty()) continue;
-                            
-                            size_t colonPos = courseEntry.find(':');
-                            if (colonPos != std::string::npos) {
-                                std::string courseCodeStr = trim(courseEntry.substr(0, colonPos));
-                                std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
-                                if (!courseCodeStr.empty() && !gradeStr.empty()) {
+                    if (tokens.size() > 4) {
+                        if (!tokens[4].empty()) {
+                            std::istringstream currentCoursesStream(tokens[4]);
+                            std::string courseEntry;
+                            while (std::getline(currentCoursesStream, courseEntry, ';')) {
+                                courseEntry = trim(courseEntry);
+                                if (courseEntry.empty()) continue;
+                                
+                                size_t colonPos = courseEntry.find(':');
+                                if (colonPos != std::string::npos) {
+                                    std::string courseCodeStr = trim(courseEntry.substr(0, colonPos));
+                                    std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
+                                    if (!courseCodeStr.empty()) {
+                                        try {
+                                            int courseCode = std::stoi(courseCodeStr);
+                                            double grade = std::stod(gradeStr);
+                                            if (grade == 0.0) {
+                                                student->addCurrentCourse(courseCode, 0.0);
+                                            } else {
+                                                student->addPreviousCourse(courseCode, grade);
+                                            }
+                                        } catch (...) {
+                                            try {
+                                                int courseCode = std::stoi(courseCodeStr);
+                                                student->addCurrentCourse(courseCode, 0.0);
+                                            } catch (...) {
+                                            }
+                                        }
+                                    }
+                                } else {
                                     try {
-                                        int courseCode = std::stoi(courseCodeStr);
-                                        double grade = std::stod(gradeStr);
-                                        student->addPreviousCourse(courseCode, grade);
+                                        int courseCode = std::stoi(trim(courseEntry));
+                                        student->addCurrentCourse(courseCode, 0.0);
                                     } catch (...) {
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (tokens.size() > 5 && !tokens[5].empty()) {
+                            std::istringstream previousCoursesStream(tokens[5]);
+                            std::string courseEntry;
+                            while (std::getline(previousCoursesStream, courseEntry, ';')) {
+                                courseEntry = trim(courseEntry);
+                                if (courseEntry.empty()) continue;
+                                
+                                size_t colonPos = courseEntry.find(':');
+                                if (colonPos != std::string::npos) {
+                                    std::string courseCodeStr = trim(courseEntry.substr(0, colonPos));
+                                    std::string gradeStr = trim(courseEntry.substr(colonPos + 1));
+                                    if (!courseCodeStr.empty() && !gradeStr.empty()) {
+                                        try {
+                                            int courseCode = std::stoi(courseCodeStr);
+                                            double grade = std::stod(gradeStr);
+                                            student->addPreviousCourse(courseCode, grade);
+                                        } catch (...) {
+                                        }
                                     }
                                 }
                             }
